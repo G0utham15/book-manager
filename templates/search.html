@@ -1,51 +1,30 @@
-{% extends 'security/base.html' %}
-{% from "security/_macros.html" import render_field_with_errors, render_field %}
+{% extends 'base_user.html' %}
 {% block head %}
 <title>Welcome</title>
 {% endblock %}
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">
-      <img src="static/assets/bootstrap-logo.svg" alt="" width="30" height="24" class="d-inline-block align-top">
-      Bootstrap</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Dropdown
-          </a>
-          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-          </ul>
-        </li>
-        <form action="/search" method="post" class="d-flex">
-            {{ render_field(form.title) }}
-          {{ form.submit }}
-        </form>
-      </ul>
-      <ul class="navbar-nav mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="/logout">Logout</a>
-        </li>
-      </ul>
-      
+   <h2>Book Details</h2>
+
+   <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for i in results %}
+    <div class="col">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{i.title.capitalize()}}</h5>
+          <p class="card-text">From {{i.author}}</p>
+          <p class="card-text">Price {{i.price}}</p>
+          <a href="/buy/{{i.id}}" class="btn btn-outline-primary" role="button">Buy</a>
+        </div>
+        <div class="card-footer">
+          <small class="text-muted">In Stock: {{i.stock}}</small>
+        </div>
+      </div>
     </div>
+    {% endfor %}
   </div>
-</nav>
-   
-<h1>Welcome {{current_user.username}}</h1>
-<table class="table">
-  <thead>
+<!-- Uncomment For Table
+ <table class="table">
+  <thead class="thead-dark">
     <tr>
       <th scope="col">Book ID</th>
       <th scope="col">Title</th>
@@ -65,5 +44,5 @@
     </tr>
     {% endfor %}
   </tbody>
-</table>
+</table> -->
 {% endblock %}

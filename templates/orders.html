@@ -1,0 +1,29 @@
+{% if current_user.has_role('admin') %}
+{% extends 'security/base_admin.html' %}
+{% else %}
+{% extends 'base_user.html' %}
+{% endif %}
+{% block head %}
+<title>Welcome</title>
+{% endblock %}
+{% block content %}
+<h1>Orders</h1>
+<table class="table">
+    <thead class="thead-dark">
+      <tr>
+          <th scope="col">ID</th>
+        <th scope="col">Username</th>
+        <th scope="col">Book ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in orders %}
+      <tr>
+        <th scope="row">{{i.id}}</th>
+        <td>{{i.username}}</td>
+        <td>{{i.book_id}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

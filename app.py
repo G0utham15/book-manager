@@ -54,14 +54,12 @@ class bookdata(db.Model):
 class orders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
-    title=db.Column(db.String(255), unique=True)
-    no_books=db.Column(db.Integer)
+    book_id=db.Column(db.Integer)
 
 class wishlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
-    title=db.Column(db.String(255), unique=True)
-    no_books=db.Column(db.Integer)
+    book_id=db.Column(db.Integer)
 
 user_datastore = SQLAlchemySessionUserDatastore(db.session,
                                                 User, Role)
@@ -172,6 +170,44 @@ def addbook():
     db.session.commit()
     flash('Book added Sucessfully', 'success')
     return redirect('/add')
+
+@app.route('/buy/<int:id>', methods=['GET', 'POST'])
+@login_required
+def buy(id):
+    
+    stock=bookdata.query.filter_by(id=id).first()
+    if stock.stock>0:
+        obj=orders(username=current_user.username, book_id=id)
+        
+    else:
+        obj=wishlist(username=current_user.username, book_id=id)
+    db.session.add(obj)
+    db.session.commit()
+    flash('Ordered Sucessfully', 'Success')
+    return redirect('/add')
+
+@app.route('/orders', methods=['GET', 'POST'])
+@login_required
+def view_orders():
+
+    if current_user.has_role('admin'):
+        all_orders=orders.query.all()
+        return render_template('orders.html', orders=all_orders)
+    else:
+        form=searchForm()
+        all_orders=orders.query.filter_by(username=current_user.username).all()
+        return render_template('orders.html', orders=all_orders, form=form)
+
+@app.route('/wishlist', methods=['GET', 'POST'])
+@login_required
+def wishlists():
+    if current_user.has_role('admin'):
+        all_orders=wishlist.query.all()
+        return render_template('wishlist.html', orders=all_orders)
+    else:
+        form=searchForm()
+        all_orders=wishlist.query.filter_by(username=current_user.username).all()
+        return render_template('wishlist.html', orders=all_orders, form= form)
 
 @app.route("/logout")
 @login_required
