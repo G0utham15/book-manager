@@ -4,16 +4,14 @@ from flask_security import Security, login_required, \
      SQLAlchemySessionUserDatastore, roles_required, current_user, utils, UserMixin, RoleMixin, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from flask_mail import Mail
-from forms import registerForm, addBook, searchForm
+from forms import registerForm, addBook, searchForm, addStock
 from flask_admin import Admin
 from flask_admin.contrib import sqla
-# Create app
+import os
+
+
 app = Flask(__name__)
 app.config.from_pyfile('config.cfg')
-#app.config.from_pyfile('mail_config.cfg')
-#app.config['SECURITY_EMAIL_SENDER']='admntest@yahoo.com'
-# Setup Flask-Security
 
 db=SQLAlchemy(app)
 
@@ -28,6 +26,8 @@ class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True)
     description = db.Column(db.String(255))
+    def __repr__(self):
+        return '<Role %r>' % self.name
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -43,6 +43,8 @@ class User(db.Model, UserMixin):
     confirmed_at = db.Column(db.DateTime())
     roles = db.relationship('Role', secondary='roles_users',
                          backref=db.backref('users', lazy='dynamic'))
+    def __repr__(self):
+        return '<User %r>' % self.username
 
 class bookdata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,16 +57,23 @@ class orders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
     book_id=db.Column(db.Integer)
+    title=db.Column(db.String(255), unique=True)
+    author=db.Column(db.Text(255))
+    price=db.Column(db.Integer)
 
 class wishlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
     book_id=db.Column(db.Integer)
+    title=db.Column(db.String(255), unique=True)
+    author=db.Column(db.Text(255))
+    price=db.Column(db.Integer)
 
 user_datastore = SQLAlchemySessionUserDatastore(db.session,
                                                 User, Role)
 security = Security(app, user_datastore, register_form=registerForm)
-#mail=Mail(app)
+
+
 # Create a user to test with
 
 class UserAdmin(sqla.ModelView):
@@ -140,9 +149,9 @@ def create_user():
 @login_required
 def home():
     if current_user.has_role('admin'):
-        return render_template('index_admin.html')
+        return render_template('admin/index_admin.html')
     form=searchForm()
-    return render_template('index.html', form=form)
+    return render_template('user/index.html', form=form)
 
 @app.route('/search', methods=['GET', 'POST'])
 @login_required
@@ -150,19 +159,26 @@ def search():
     form=searchForm()
     book=form.title.data
     results=db.session.query(bookdata).filter(bookdata.title.like("%{}%".format(book)))
-    return render_template('search.html', results=results, form=form)
+    return render_template('view/search.html', results=results, form=form)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
 def addBooks():
     form=addBook()
-    return render_template('addBooks.html', form=form)
+    return render_template('admin/addBooks.html', form=form)
+
+@app.route('/addstock', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def addStocks():
+    form=addStock()
+    return render_template('admin/addStock.html', form=form)
 
 @app.route('/addbook', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
-def addbook():
+def addbooks():
     form=addBook()
 
     book=bookdata(title=form.title.data, author= form.author.data, price=form.price.data, stock= form.stock.data)
@@ -171,19 +187,31 @@ def addbook():
     flash('Book added Sucessfully', 'success')
     return redirect('/add')
 
+@app.route('/addNewStock', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def addNewStock():
+    form=addStock()
+    book_obj=bookdata.query.filter_by(title=form.title.data).first()
+    book_obj.stock+=form.stock.data
+    db.session.commit()
+    flash('New Stock Added', 'success')
+    return redirect('/addstock')
 @app.route('/buy/<int:id>', methods=['GET', 'POST'])
 @login_required
 def buy(id):
     
-    stock=bookdata.query.filter_by(id=id).first()
-    if stock.stock>0:
-        obj=orders(username=current_user.username, book_id=id)
-        
+    book_obj=bookdata.query.filter_by(id=id).first()
+    if book_obj.stock>0:
+        obj=orders(username=current_user.username, book_id=id, title=book_obj.title, author=book_obj.author, price=book_obj.price)
+        book_obj.stock-=1
+        flash('Ordered Sucessfully', 'Success')
     else:
-        obj=wishlist(username=current_user.username, book_id=id)
+        obj=wishlist(username=current_user.username, book_id=id, title=book_obj.title, author=book_obj.author, price=book_obj.price)
+        flash('Added to wishlist Sucessfully', 'Success')
     db.session.add(obj)
     db.session.commit()
-    flash('Ordered Sucessfully', 'Success')
+    
     return redirect('/add')
 
 @app.route('/orders', methods=['GET', 'POST'])
@@ -192,22 +220,22 @@ def view_orders():
 
     if current_user.has_role('admin'):
         all_orders=orders.query.all()
-        return render_template('orders.html', orders=all_orders)
+        return render_template('view/orders.html', orders=all_orders)
     else:
         form=searchForm()
         all_orders=orders.query.filter_by(username=current_user.username).all()
-        return render_template('orders.html', orders=all_orders, form=form)
+        return render_template('view/orders.html', orders=all_orders, form=form)
 
 @app.route('/wishlist', methods=['GET', 'POST'])
 @login_required
 def wishlists():
     if current_user.has_role('admin'):
         all_orders=wishlist.query.all()
-        return render_template('wishlist.html', orders=all_orders)
+        return render_template('view/wishlist.html', orders=all_orders)
     else:
         form=searchForm()
         all_orders=wishlist.query.filter_by(username=current_user.username).all()
-        return render_template('wishlist.html', orders=all_orders, form= form)
+        return render_template('view/wishlist.html', orders=all_orders,form= form)
 
 @app.route("/logout")
 @login_required
@@ -217,4 +245,5 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

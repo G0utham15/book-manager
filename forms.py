@@ -17,3 +17,8 @@ class addBook(FlaskForm):
 class searchForm(FlaskForm):
     title=StringField("Book Title")
     submit=SubmitField("Search")
+
+class addStock(FlaskForm):
+    title=StringField("Book Title")
+    stock=IntegerField("New Stock")
+    submit=SubmitField("Add stock")
