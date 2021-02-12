@@ -58,7 +58,7 @@ class orders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
     book_id=db.Column(db.Integer)
-    title=db.Column(db.String(255), unique=True)
+    title=db.Column(db.String(255))
     author=db.Column(db.Text(255))
     price=db.Column(db.Integer)
 
@@ -66,7 +66,7 @@ class wishlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username=db.Column(db.String(255))
     book_id=db.Column(db.Integer)
-    title=db.Column(db.String(255), unique=True)
+    title=db.Column(db.String(255))
     author=db.Column(db.Text(255))
     price=db.Column(db.Integer)
 
