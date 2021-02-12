@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, flash, request
+from flask_admin.contrib.sqla.view import ModelView
 from flask_security.forms import PasswordField
 from flask_security import Security, login_required, \
      SQLAlchemySessionUserDatastore, roles_required, current_user, utils, UserMixin, RoleMixin, login_user, logout_user
@@ -129,6 +130,9 @@ admin = Admin(app)
 # Add Flask-Admin views for Users and Roles
 admin.add_view(UserAdmin(User, db.session))
 admin.add_view(RoleAdmin(Role, db.session))
+admin.add_view(ModelView(bookdata, db.session))
+admin.add_view(ModelView(orders, db.session))
+admin.add_view(ModelView(wishlist, db.session))
 
 @app.before_first_request
 def create_user():
